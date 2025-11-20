@@ -1,0 +1,15 @@
+{
+  "name": "employee-labour-management",
+  "version": "1.0.0",
+  "description": "Employee Labour Management System - Digitalize attendance and payroll",
+  "scripts": {
+    "install:all": "npm install && cd backend && npm install && cd ../frontend && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd frontend && npm run dev",
+    "init": "cd backend && npm run init-sheets",
+    "build:frontend": "cd frontend && npm run build"
+  },
+  "keywords": ["labour", "attendance", "payroll", "management"],
+  "author": "",
+  "license": "ISC"
+}

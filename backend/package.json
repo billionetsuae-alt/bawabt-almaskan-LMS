@@ -1,0 +1,35 @@
+{
+  "name": "labour-management-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Employee Labour Management System",
+  "main": "src/server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/server.js",
+    "start": "node src/server.js",
+    "init-sheets": "node src/scripts/initSheets.js",
+    "fix-booleans": "node src/scripts/fixBooleanValues.js",
+    "create-admin": "node src/scripts/createAdmin.js"
+  },
+  "keywords": [
+    "labour",
+    "attendance",
+    "payroll"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "cors": "^2.8.5",
+    "date-fns": "^2.30.0",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-validator": "^7.0.1",
+    "googleapis": "^128.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "node-cron": "^4.2.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
