@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useAuthStore } from './store/authStore';
 import { useUIStore } from './store/uiStore';
 import { Layout } from './components/Layout';
+import { LandingPage } from './pages/LandingPage';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { Attendance } from './pages/Attendance';
@@ -33,7 +34,7 @@ function PrivateRoute({ children }) {
 
 function DefaultRedirect() {
   const { user } = useAuthStore();
-  const defaultPath = user?.role === 'manager' ? '/dashboard' : '/attendance';
+  const defaultPath = user?.role === 'manager' ? '/app/dashboard' : '/app/attendance';
   return <Navigate to={defaultPath} replace />;
 }
 
@@ -49,23 +50,24 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
         <Routes>
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<Login />} />
           <Route
-            path="/*"
+            path="/app/*"
             element={
               <PrivateRoute>
                 <Layout>
                   <Routes>
                     <Route path="/" element={<DefaultRedirect />} />
-                    <Route path="/dashboard" element={<Dashboard />} />
-                    <Route path="/attendance" element={<Attendance />} />
-                    <Route path="/employees" element={<Employees />} />
-                    <Route path="/sites" element={<Sites />} />
-                    <Route path="/payroll" element={<Payroll />} />
-                    <Route path="/reports" element={<Reports />} />
-                    <Route path="/users" element={<Users />} />
-                    <Route path="/audit" element={<Audit />} />
-                    <Route path="/backup" element={<Backup />} />
+                    <Route path="dashboard" element={<Dashboard />} />
+                    <Route path="attendance" element={<Attendance />} />
+                    <Route path="employees" element={<Employees />} />
+                    <Route path="sites" element={<Sites />} />
+                    <Route path="payroll" element={<Payroll />} />
+                    <Route path="reports" element={<Reports />} />
+                    <Route path="users" element={<Users />} />
+                    <Route path="audit" element={<Audit />} />
+                    <Route path="backup" element={<Backup />} />
                   </Routes>
                 </Layout>
               </PrivateRoute>

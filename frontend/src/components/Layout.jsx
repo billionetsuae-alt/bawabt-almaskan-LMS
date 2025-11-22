@@ -31,15 +31,15 @@ export function Layout({ children }) {
   const isManager = user?.role === 'manager';
 
   const navigation = [
-    { name: 'Dashboard', icon: LayoutDashboard, href: '/dashboard', roles: ['manager'] },
-    { name: 'Attendance', icon: ClipboardList, href: '/attendance', roles: ['manager', 'supervisor'] },
-    { name: 'Employees', icon: Users, href: '/employees', roles: ['manager'] },
-    { name: 'Sites', icon: MapPin, href: '/sites', roles: ['manager'] },
-    { name: 'Payroll', icon: DollarSign, href: '/payroll', roles: ['manager'] },
-    { name: 'Reports', icon: BarChart3, href: '/reports', roles: ['manager'] },
-    // { name: 'Backup', icon: Database, href: '/backup', roles: ['manager'] }, // Disabled - requires Google Workspace
-    { name: 'Supervisors', icon: Users, href: '/users', roles: ['manager'] },
-    { name: 'Audit Logs', icon: FileText, href: '/audit', roles: ['manager'] },
+    { name: 'Dashboard', icon: LayoutDashboard, href: '/app/dashboard', roles: ['manager'] },
+    { name: 'Attendance', icon: ClipboardList, href: '/app/attendance', roles: ['manager', 'supervisor'] },
+    { name: 'Employees', icon: Users, href: '/app/employees', roles: ['manager'] },
+    { name: 'Sites', icon: MapPin, href: '/app/sites', roles: ['manager'] },
+    { name: 'Payroll', icon: DollarSign, href: '/app/payroll', roles: ['manager'] },
+    { name: 'Reports', icon: BarChart3, href: '/app/reports', roles: ['manager'] },
+    // { name: 'Backup', icon: Database, href: '/app/backup', roles: ['manager'] }, // Disabled - requires Google Workspace
+    { name: 'Supervisors', icon: Users, href: '/app/users', roles: ['manager'] },
+    { name: 'Audit Logs', icon: FileText, href: '/app/audit', roles: ['manager'] },
   ];
 
   const filteredNav = navigation.filter(item => item.roles.includes(user?.role));

@@ -15,7 +15,7 @@ export function Login() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/attendance');
+      navigate('/app/attendance');
     }
   }, [isAuthenticated, navigate]);
 
@@ -27,7 +27,7 @@ export function Login() {
     e.preventDefault();
     const success = await login({ email, password });
     if (success) {
-      navigate('/attendance');
+      navigate('/app/attendance');
     }
   };
 

@@ -57,11 +57,14 @@ export async function getSheetData(sheetName, range = '') {
 
 /**
  * Append data to a sheet
+ * @param {string} sheetName - Name of the sheet
+ * @param {array} values - Array of rows to append
+ * @param {string} spreadsheetId - Optional custom spreadsheet ID (defaults to SPREADSHEET_ID)
  */
-export async function appendToSheet(sheetName, values) {
+export async function appendToSheet(sheetName, values, spreadsheetId = null) {
   try {
     const response = await sheets.spreadsheets.values.append({
-      spreadsheetId: SPREADSHEET_ID,
+      spreadsheetId: spreadsheetId || SPREADSHEET_ID,
       range: sheetName,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values },

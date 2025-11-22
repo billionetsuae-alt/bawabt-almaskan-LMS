@@ -8,6 +8,7 @@
     "dev": "nodemon src/server.js",
     "start": "node src/server.js",
     "init-sheets": "node src/scripts/initSheets.js",
+    "init-landing": "node src/scripts/initLandingSheet.js",
     "fix-booleans": "node src/scripts/fixBooleanValues.js",
     "create-admin": "node src/scripts/createAdmin.js"
   },

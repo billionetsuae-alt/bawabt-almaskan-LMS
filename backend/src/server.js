@@ -8,6 +8,7 @@ import attendanceRoutes from './routes/attendance.js';
 import siteRoutes from './routes/sites.js';
 import payrollRoutes from './routes/payroll.js';
 import auditRoutes from './routes/audit.js';
+import landingRoutes from './routes/landing.js';
 // Backup feature disabled - requires Google Workspace for service account storage
 // import backupRoutes from './routes/backup.js';
 // import { startBackupScheduler } from './services/scheduledBackup.js';
@@ -32,6 +33,7 @@ app.use(express.urlencoded({ extended: true }));
 // });
 
 // Routes
+app.use('/api/landing', landingRoutes); // Public landing page form
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/employees', employeeRoutes);
