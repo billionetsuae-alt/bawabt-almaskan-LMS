@@ -17,6 +17,13 @@ export function LandingPage() {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
 
+  const scrollToForm = () => {
+    const formElement = document.getElementById('demo-form');
+    if (formElement) {
+      formElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
   const handleEmailSubmit = (e) => {
     e.preventDefault();
     setFormExpanded(true);
@@ -102,7 +109,7 @@ export function LandingPage() {
                 LOGIN
               </a>
               <button
-                onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })}
+                onClick={scrollToForm}
                 className="px-4 sm:px-6 py-2 sm:py-2.5 bg-violet-600 text-white font-medium rounded-full hover:bg-violet-700 hover:shadow-lg transition-all duration-300 text-sm sm:text-base"
               >
                 GET STARTED
@@ -158,7 +165,7 @@ export function LandingPage() {
               {/* CTA Button - Mobile */}
               <div className="lg:hidden">
                 <button
-                  onClick={() => window.scrollTo({ top: 600, behavior: 'smooth' })}
+                  onClick={scrollToForm}
                   className="w-full px-8 py-4 bg-violet-600 text-white font-bold rounded-2xl hover:bg-violet-700 hover:shadow-2xl transition-all duration-300 text-lg flex items-center justify-center gap-2"
                 >
                   Get Free Demo
@@ -176,7 +183,7 @@ export function LandingPage() {
                 <div className="absolute -bottom-8 left-20 w-72 h-72 bg-teal-300 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-blob animation-delay-4000"></div>
 
                 {/* Form Card */}
-                <div className="relative bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-200">
+                <div id="demo-form" className="relative bg-white/90 backdrop-blur-lg rounded-3xl shadow-2xl p-6 sm:p-8 border border-gray-200">
                   {success ? (
                     <div className="text-center py-8 space-y-6">
                       <div className="mx-auto w-20 h-20 bg-gradient-to-r from-green-500 to-teal-500 rounded-full flex items-center justify-center animate-bounce">
@@ -412,7 +419,7 @@ export function LandingPage() {
             Join hundreds of businesses streamlining their HR operations
           </p>
           <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={scrollToForm}
             className="px-8 sm:px-12 py-4 sm:py-5 bg-violet-600 text-white font-bold text-base sm:text-lg rounded-full hover:bg-violet-700 hover:shadow-2xl transition-all duration-300 inline-flex items-center gap-3"
           >
             Get Started Now
