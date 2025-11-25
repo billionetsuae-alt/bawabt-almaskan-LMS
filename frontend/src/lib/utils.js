@@ -24,6 +24,14 @@ export function formatCurrency(amount) {
   }).format(amount);
 }
 
+export function formatAmount(amount) {
+  return new Intl.NumberFormat('en-AE', {
+    style: 'decimal',
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(amount);
+}
+
 export function getInitials(name) {
   return name
     .split(' ')

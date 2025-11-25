@@ -10,6 +10,7 @@ import siteExpenseRoutes from './routes/siteExpenses.js';
 import payrollRoutes from './routes/payroll.js';
 import auditRoutes from './routes/audit.js';
 import landingRoutes from './routes/landing.js';
+import driveRoutes from './routes/drive.js';
 // Backup feature disabled - requires Google Workspace for service account storage
 // import backupRoutes from './routes/backup.js';
 // import { startBackupScheduler } from './services/scheduledBackup.js';
@@ -56,6 +57,7 @@ app.use('/api/sites', siteRoutes);
 app.use('/api/site-expenses', siteExpenseRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/drive', driveRoutes);
 // app.use('/api/backup', backupRoutes); // Disabled - requires Google Workspace
 
 // Root endpoint

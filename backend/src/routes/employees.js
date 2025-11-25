@@ -5,7 +5,8 @@ import {
   getEmployee,
   createEmployee,
   updateEmployee,
-  deleteEmployee
+  deleteEmployee,
+  testEmployeeDriveUpload
 } from '../controllers/employeeController.js';
 import { authenticate, requireManager } from '../middleware/auth.js';
 import { validate } from '../middleware/validate.js';
@@ -36,6 +37,12 @@ router.post('/',
 router.put('/:id',
   requireManager,
   updateEmployee
+);
+
+// Test Google Drive upload for employee (manager only)
+router.post('/:id/drive-test',
+  requireManager,
+  testEmployeeDriveUpload
 );
 
 // Delete employee (manager only)

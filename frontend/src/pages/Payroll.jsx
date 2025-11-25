@@ -6,8 +6,9 @@ import { Button } from '@/components/ui/Button';
 import { Select } from '@/components/ui/Select';
 import { Label } from '@/components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/Dialog';
 import { Download, FileSpreadsheet, FileText } from 'lucide-react';
-import { formatCurrency, downloadFile } from '@/lib/utils';
+import { formatCurrency, formatAmount, downloadFile } from '@/lib/utils';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -17,6 +18,7 @@ export function Payroll() {
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState(currentDate.getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(currentDate.getFullYear());
+  const [detailItem, setDetailItem] = useState(null);
   const { showToast } = useUIStore();
 
   const { data: payrollData, isLoading, error } = useQuery({
@@ -223,34 +225,45 @@ export function Payroll() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b text-left text-sm text-muted-foreground">
-                      <th className="pb-3 font-medium">Employee</th>
-                      <th className="pb-3 font-medium">Profession</th>
-                      <th className="pb-3 font-medium text-center">Present</th>
-                      <th className="pb-3 font-medium text-center">Absent</th>
-                      <th className="pb-3 font-medium text-center">OT Hrs</th>
-                      <th className="pb-3 font-medium text-right">Day Salary</th>
-                      <th className="pb-3 font-medium text-right">OT Salary</th>
-                      <th className="pb-3 font-medium text-right">Total</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium w-40">Employee</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium w-32 hidden sm:table-cell">Profession</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium text-center w-16">Present</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium text-center w-16">Absent</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium text-center w-16">OT Hrs</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium text-right w-24">Day Salary</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium text-right w-24">OT Salary</th>
+                      <th className="px-2 sm:px-3 pb-3 font-medium text-right w-24">Total</th>
                     </tr>
                   </thead>
                   <tbody>
                     {payrollData.payroll.map(item => (
-                      <tr key={item.employeeId} className="border-b hover:bg-muted/50">
-                        <td className="py-3 font-medium">{item.employeeName}</td>
-                        <td className="py-3">{item.profession}</td>
-                        <td className="py-3 text-center">{item.presentDays.toFixed(1)}</td>
-                        <td className="py-3 text-center">{item.absentDays}</td>
-                        <td className="py-3 text-center">{item.totalOtHours.toFixed(1)}</td>
-                        <td className="py-3 text-right">{formatCurrency(item.daySalary)}</td>
-                        <td className="py-3 text-right">{formatCurrency(item.otSalary)}</td>
-                        <td className="py-3 text-right font-semibold">{formatCurrency(item.totalSalary)}</td>
+                      <tr
+                        key={item.employeeId}
+                        className="border-b hover:bg-muted/50 cursor-pointer"
+                        onClick={() => setDetailItem(item)}
+                      >
+                        <td className="py-3 px-2 sm:px-3">
+                          <div className="flex flex-col">
+                            <span className="font-medium break-words">{item.employeeName}</span>
+                            <span className="text-sm text-muted-foreground sm:hidden break-words">
+                              {item.profession}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 px-2 sm:px-3 hidden sm:table-cell">{item.profession}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center">{item.presentDays.toFixed(1)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center">{item.absentDays}</td>
+                        <td className="py-3 px-2 sm:px-3 text-center">{item.totalOtHours.toFixed(1)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-right">{formatAmount(item.daySalary)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-right">{formatAmount(item.otSalary)}</td>
+                        <td className="py-3 px-2 sm:px-3 text-right font-semibold">{formatCurrency(item.totalSalary)}</td>
                       </tr>
                     ))}
                   </tbody>
                   <tfoot>
                     <tr className="border-t-2 font-bold">
-                      <td className="py-3" colSpan="7">TOTAL</td>
-                      <td className="py-3 text-right">{formatCurrency(payrollData.totalAmount)}</td>
+                      <td className="py-3 px-2 sm:px-3" colSpan="7">TOTAL</td>
+                      <td className="py-3 px-2 sm:px-3 text-right">{formatCurrency(payrollData.totalAmount)}</td>
                     </tr>
                   </tfoot>
                 </table>
@@ -259,6 +272,64 @@ export function Payroll() {
           )}
         </CardContent>
       </Card>
+
+      {/* Payroll Detail Dialog */}
+      <Dialog open={!!detailItem} onClose={() => setDetailItem(null)}>
+        <DialogContent className="backdrop-blur-sm bg-white/80 dark:bg-slate-900/80">
+          <DialogHeader>
+            <DialogTitle>Payroll Details</DialogTitle>
+          </DialogHeader>
+          {detailItem && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-lg font-semibold break-words">{detailItem.employeeName}</p>
+                <p className="text-sm text-muted-foreground break-words">{detailItem.profession}</p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {format(new Date(selectedYear, selectedMonth - 1), 'MMMM yyyy')}
+                </p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Present Days:</span>
+                  <span className="ml-2 font-medium">{detailItem.presentDays.toFixed(1)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Absent Days:</span>
+                  <span className="ml-2 font-medium">{detailItem.absentDays}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Half Days:</span>
+                  <span className="ml-2 font-medium">{detailItem.halfDays}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">OT Hours:</span>
+                  <span className="ml-2 font-medium">{detailItem.totalOtHours.toFixed(1)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Per Day Salary:</span>
+                  <span className="ml-2 font-medium">{formatAmount(detailItem.perDaySalary)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Per Hour Salary:</span>
+                  <span className="ml-2 font-medium">{formatAmount(detailItem.perHourSalary)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Day Salary:</span>
+                  <span className="ml-2 font-medium">{formatAmount(detailItem.daySalary)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">OT Salary:</span>
+                  <span className="ml-2 font-medium">{formatAmount(detailItem.otSalary)}</span>
+                </div>
+                <div className="sm:col-span-2">
+                  <span className="text-muted-foreground">Total Salary:</span>
+                  <span className="ml-2 font-semibold">{formatCurrency(detailItem.totalSalary)}</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -9,11 +9,12 @@ import { Label } from '@/components/ui/Label';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
-import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
+import { Plus, Edit2, Trash2, MapPin, Search } from 'lucide-react';
 
 export function Sites() {
   const [dialog, setDialog] = useState({ open: false, mode: 'create', site: null });
   const [expenseDialog, setExpenseDialog] = useState({ open: false, site: null });
+  const [searchTerm, setSearchTerm] = useState('');
   const { showToast } = useUIStore();
   const queryClient = useQueryClient();
 
@@ -114,6 +115,16 @@ export function Sites() {
     return totals;
   }, [siteExpenses]);
 
+  const filteredSites = useMemo(() => {
+    if (!searchTerm) return sites;
+    const term = searchTerm.toLowerCase();
+    return sites.filter(site =>
+      site.siteNumber.toLowerCase().includes(term) ||
+      site.siteName.toLowerCase().includes(term) ||
+      (site.location || '').toLowerCase().includes(term)
+    );
+  }, [sites, searchTerm]);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -129,6 +140,20 @@ export function Sites() {
         </Button>
       </div>
 
+      {sites.length > 0 && (
+        <div className="mt-2 flex justify-start">
+          <div className="relative w-full sm:max-w-xs">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search sites..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-9"
+            />
+          </div>
+        </div>
+      )}
+
       {isLoading ? (
         <div className="text-center py-12 text-muted-foreground">Loading...</div>
       ) : sites.length === 0 ? (
@@ -137,9 +162,15 @@ export function Sites() {
             No sites yet. Add one to get started.
           </CardContent>
         </Card>
+      ) : filteredSites.length === 0 ? (
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            No sites match your search.
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {sites.map(site => (
+          {filteredSites.map(site => (
             <Card key={site.id}>
               <CardHeader>
                 <div className="flex items-start justify-between">

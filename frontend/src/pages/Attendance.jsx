@@ -285,7 +285,7 @@ export function Attendance() {
                     <tr className="border-b text-left text-sm text-muted-foreground">
                       <th className="pb-3 font-medium">Employee</th>
                       <th className="pb-3 font-medium">Status</th>
-                      <th className="pb-3 font-medium">OT Hours</th>
+                      <th className="pb-3 font-medium">OT</th>
                       <th className="pb-3 font-medium">Site</th>
                       <th className="pb-3 font-medium">Other Sites</th>
                     </tr>
@@ -297,34 +297,34 @@ export function Attendance() {
                       
                       return (
                         <tr key={empId} className="border-b">
-                          <td className="py-3">
+                          <td className="py-2 sm:py-3 pr-1 sm:pr-2">
                             <div>
                               <div className="font-medium">{emp.name}</div>
                               <div className="text-sm text-muted-foreground">{emp.profession}</div>
                             </div>
                           </td>
-                          <td className="py-3">
+                          <td className="py-2 sm:py-3 px-1 sm:px-2">
                             <Select
                               value={bulkRecords[empId].status}
                               onChange={(e) => updateBulkRecord(empId, 'status', e.target.value)}
-                              className="w-20"
+                              className="w-15 sm:w-19"
                             >
                               <option value="Present">P</option>
                               <option value="Absent">A</option>
                               <option value="Half-Day">H</option>
                             </Select>
                           </td>
-                          <td className="py-3">
+                          <td className="py-2 sm:py-3 px-1 sm:px-2">
                             <Input
                               type="number"
                               min="0"
                               step="0.5"
                               value={bulkRecords[empId].otHours}
                               onChange={(e) => updateBulkRecord(empId, 'otHours', parseFloat(e.target.value))}
-                              className="w-20"
+                              className="w-10 sm:w-16"
                             />
                           </td>
-                          <td className="py-3">
+                          <td className="py-2 sm:py-3 px-1 sm:px-2">
                             <Select
                               value={bulkRecords[empId].siteId}
                               onChange={(e) => updateBulkRecord(empId, 'siteId', e.target.value)}
@@ -365,10 +365,11 @@ export function Attendance() {
                               type="button"
                               variant="outline"
                               size="sm"
+                              className="mt-1"
                               onClick={() => addBulkExtraSite(empId)}
                             >
-                              <Plus className="h-4 w-4 mr-2" />
-                              Add Site
+                              <Plus className="h-4 w-4" />
+                              <span className="hidden sm:inline ml-2">Add Site</span>
                             </Button>
                           </td>
                         </tr>
@@ -468,16 +469,18 @@ export function Attendance() {
                                     setExtraSites(att.extraSites || []);
                                   }}
                                 >
-                                  <Edit2 className="h-4 w-4 mr-1" />
-                                  Edit
+                                  <Edit2 className="h-4 w-4 sm:mr-1" />
+                                  <span className="hidden sm:inline">Edit</span>
                                 </Button>
                               )}
                               {canApprove && (
                                 <Button
                                   size="sm"
+                                  className="bg-green-600 hover:bg-green-700 text-white"
                                   onClick={() => approveMutation.mutate(att.id)}
                                 >
-                                  Approve
+                                  <Check className="h-4 w-4" />
+                                  <span className="hidden sm:inline ml-1">Approve</span>
                                 </Button>
                               )}
                             </div>

@@ -1,5 +1,6 @@
 import { getSheetData, appendToSheet, updateSheet, generateId, SHEETS, findRowIndexById } from '../services/googleSheets.js';
 import { logAudit } from '../services/audit.js';
+import { createTestFileForEmployee } from '../services/employeeFiles.js';
 
 /**
  * Get all employees
@@ -194,6 +195,27 @@ export async function updateEmployee(req, res) {
   } catch (error) {
     console.error('Update employee error:', error);
     res.status(500).json({ error: 'Failed to update employee' });
+  }
+}
+
+/**
+ * Test Google Drive upload for an employee
+ */
+export async function testEmployeeDriveUpload(req, res) {
+  try {
+    const { id } = req.params;
+    const file = await createTestFileForEmployee(id);
+
+    res.json({
+      success: true,
+      file
+    });
+  } catch (error) {
+    console.error('Test employee Drive upload error:', error);
+    res.status(500).json({
+      error: 'Failed to create test file in Google Drive',
+      details: error.message
+    });
   }
 }
 

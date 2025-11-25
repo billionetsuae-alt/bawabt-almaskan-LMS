@@ -9,13 +9,13 @@ import { Label } from '@/components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
-import { Plus, Edit2, Trash2, Search, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 export function Employees() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dialog, setDialog] = useState({ open: false, mode: 'create', employee: null });
-  const [expandedRow, setExpandedRow] = useState(null);
+  const [detailEmployee, setDetailEmployee] = useState(null);
   const { showToast } = useUIStore();
   const queryClient = useQueryClient();
 
@@ -127,7 +127,7 @@ export function Employees() {
                 <thead>
                   <tr className="border-b text-left text-sm text-muted-foreground">
                     <th className="pb-3 font-medium">Name</th>
-                    <th className="pb-3 font-medium">Profession</th>
+                    <th className="pb-3 font-medium hidden sm:table-cell">Profession</th>
                     <th className="pb-3 font-medium hidden md:table-cell">Daily Rate</th>
                     <th className="pb-3 font-medium hidden lg:table-cell">Hourly Rate</th>
                     <th className="pb-3 font-medium">Status</th>
@@ -136,86 +136,52 @@ export function Employees() {
                 </thead>
                 <tbody>
                   {filteredEmployees.map(emp => (
-                    <>
-                      <tr 
-                        key={emp.id} 
-                        className="border-b hover:bg-muted/50 cursor-pointer"
-                        onClick={() => setExpandedRow(expandedRow === emp.id ? null : emp.id)}
-                      >
-                        <td className="py-3">
-                          <div className="flex items-center gap-2">
-                            {expandedRow === emp.id ? (
-                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            )}
-                            <span className="font-medium">{emp.name}</span>
+                    <tr
+                      key={emp.id}
+                      className="border-b hover:bg-muted/50 cursor-pointer"
+                      onClick={() => setDetailEmployee(emp)}
+                    >
+                      <td className="py-3">
+                        <div className="flex items-start gap-2">
+                          <div className="flex flex-col">
+                            <span className="font-medium break-words">{emp.name}</span>
+                            <span className="text-sm text-muted-foreground sm:hidden break-words">
+                              {emp.profession}
+                            </span>
                           </div>
-                        </td>
-                        <td className="py-3">{emp.profession}</td>
-                        <td className="py-3 hidden md:table-cell">{formatCurrency(emp.perDaySalary)}</td>
-                        <td className="py-3 hidden lg:table-cell">{formatCurrency(emp.perHourSalary)}</td>
-                        <td className="py-3">
-                          <Badge variant={emp.active ? 'success' : 'secondary'}>
-                            {emp.active ? 'Active' : 'Inactive'}
-                          </Badge>
-                        </td>
-                        <td className="py-3" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => setDialog({ open: true, mode: 'edit', employee: emp })}
-                            >
-                              <Edit2 className="h-4 w-4" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => {
-                                if (confirm(`Delete ${emp.name}?`)) {
-                                  deleteMutation.mutate(emp.id);
-                                }
-                              }}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                      {expandedRow === emp.id && (
-                        <tr className="bg-muted/30">
-                          <td colSpan="6" className="py-4 px-6">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <span className="text-muted-foreground">Daily Rate:</span>
-                                <span className="ml-2 font-medium">{formatCurrency(emp.perDaySalary)}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Hourly Rate:</span>
-                                <span className="ml-2 font-medium">{formatCurrency(emp.perHourSalary)}</span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Site:</span>
-                                <span className="ml-2 font-medium">
-                                  {emp.siteId ? sites.find(s => s.id === emp.siteId)?.siteName || '-' : '-'}
-                                </span>
-                              </div>
-                              <div>
-                                <span className="text-muted-foreground">Joining Date:</span>
-                                <span className="ml-2 font-medium">{emp.joiningDate || '-'}</span>
-                              </div>
-                              {emp.notes && (
-                                <div className="col-span-2">
-                                  <span className="text-muted-foreground">Notes:</span>
-                                  <span className="ml-2">{emp.notes}</span>
-                                </div>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      )}
-                    </>
+                        </div>
+                      </td>
+                      <td className="py-3 hidden sm:table-cell">{emp.profession}</td>
+                      <td className="py-3 hidden md:table-cell">{formatCurrency(emp.perDaySalary)}</td>
+                      <td className="py-3 hidden lg:table-cell">{formatCurrency(emp.perHourSalary)}</td>
+                      <td className="py-3">
+                        <Badge variant={emp.active ? 'success' : 'secondary'}>
+                          {emp.active ? 'Active' : 'Inactive'}
+                        </Badge>
+                      </td>
+                      <td className="py-3" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setDialog({ open: true, mode: 'edit', employee: emp })}
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => {
+                              if (confirm(`Delete ${emp.name}?`)) {
+                                deleteMutation.mutate(emp.id);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
                   ))}
                 </tbody>
               </table>
@@ -223,6 +189,55 @@ export function Employees() {
           )}
         </CardContent>
       </Card>
+
+      {/* Employee Detail Dialog */}
+      <Dialog open={!!detailEmployee} onClose={() => setDetailEmployee(null)}>
+        <DialogContent className="backdrop-blur-sm bg-white/80 dark:bg-slate-900/80">
+          <DialogHeader>
+            <DialogTitle>Employee Details</DialogTitle>
+          </DialogHeader>
+          {detailEmployee && (
+            <div className="space-y-4">
+              <div>
+                <p className="text-lg font-semibold break-words">{detailEmployee.name}</p>
+                <p className="text-sm text-muted-foreground break-words">{detailEmployee.profession}</p>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Daily Rate:</span>
+                  <span className="ml-2 font-medium">{formatCurrency(detailEmployee.perDaySalary)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Hourly Rate:</span>
+                  <span className="ml-2 font-medium">{formatCurrency(detailEmployee.perHourSalary)}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Status:</span>
+                  <span className="ml-2 font-medium">{detailEmployee.active ? 'Active' : 'Inactive'}</span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Site:</span>
+                  <span className="ml-2 font-medium">
+                    {detailEmployee.siteId
+                      ? sites.find(s => s.id === detailEmployee.siteId)?.siteName || '-'
+                      : '-'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Joining Date:</span>
+                  <span className="ml-2 font-medium">{detailEmployee.joiningDate || '-'}</span>
+                </div>
+              </div>
+              {detailEmployee.notes && (
+                <div className="text-sm">
+                  <span className="text-muted-foreground">Notes:</span>
+                  <span className="ml-2 break-words">{detailEmployee.notes}</span>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       {/* Employee Dialog */}
       <Dialog open={dialog.open} onClose={() => setDialog({ open: false, mode: 'create', employee: null })}>
