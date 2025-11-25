@@ -65,9 +65,16 @@ export const siteAPI = {
   delete: (id) => api.delete(`/api/sites/${id}`),
 };
 
+// Site Expense API
+export const siteExpenseAPI = {
+  getAll: (params) => api.get('/api/site-expenses', { params }),
+  create: (data) => api.post('/api/site-expenses', data),
+};
+
 // Payroll API
 export const payrollAPI = {
   calculate: (year, month) => api.get(`/api/payroll/${year}/${month}`),
+  calculateMonthly: (year, month) => api.get(`/api/payroll/${year}/${month}`),
   getSummary: (params) => api.get('/api/payroll/summary', { params }),
 };
 

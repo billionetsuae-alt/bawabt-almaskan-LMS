@@ -30,7 +30,8 @@ export async function getAttendance(req, res) {
         approved: row[9] === 'TRUE' || row[9] === 'true' || row[9] === true,
         markedAt: row[10],
         lastEditedAt: row[11] || null,
-        approvedAt: row[12] || null
+        approvedAt: row[12] || null,
+        extraSites: row[13] ? row[13].split(',').filter(Boolean) : []
       }));
 
     // Apply filters
@@ -62,7 +63,7 @@ export async function getAttendance(req, res) {
  */
 export async function markAttendance(req, res) {
   try {
-    const { employeeId, date, status, otHours = 0, siteId, notes = '' } = req.body;
+    const { employeeId, date, status, otHours = 0, siteId, notes = '', extraSites } = req.body;
 
     // Check if attendance already exists for this employee on this date
     const existing = await getSheetData(SHEETS.ATTENDANCE);
@@ -77,6 +78,10 @@ export async function markAttendance(req, res) {
     const attendanceId = generateId('att_');
     const now = new Date().toISOString();
 
+    const extraSitesValue = Array.isArray(extraSites)
+      ? extraSites.join(',')
+      : (extraSites || '');
+
     const attendanceRow = [
       attendanceId,
       employeeId,
@@ -90,7 +95,8 @@ export async function markAttendance(req, res) {
       'false', // approved
       now, // markedAt
       '', // lastEditedAt
-      '' // approvedAt
+      '', // approvedAt
+      extraSitesValue
     ];
 
     await appendToSheet(SHEETS.ATTENDANCE, [attendanceRow]);
@@ -117,7 +123,8 @@ export async function markAttendance(req, res) {
       approved: false,
       markedAt: now,
       lastEditedAt: null,
-      approvedAt: null
+      approvedAt: null,
+      extraSites: extraSitesValue ? extraSitesValue.split(',').filter(Boolean) : []
     });
   } catch (error) {
     console.error('Mark attendance error:', error);
@@ -130,7 +137,7 @@ export async function markAttendance(req, res) {
  */
 export async function bulkMarkAttendance(req, res) {
   try {
-    const { date, records } = req.body; // records: [{ employeeId, status, otHours, siteId, notes }]
+    const { date, records } = req.body; // records: [{ employeeId, status, otHours, siteId, notes, extraSites? }]
 
     if (!Array.isArray(records) || records.length === 0) {
       return res.status(400).json({ error: 'No records provided' });
@@ -149,6 +156,10 @@ export async function bulkMarkAttendance(req, res) {
       if (duplicate) continue; // Skip duplicates
 
       const attendanceId = generateId('att_');
+      const extraSitesValue = Array.isArray(record.extraSites)
+        ? record.extraSites.join(',')
+        : (record.extraSites || '');
+
       const attendanceRow = [
         attendanceId,
         record.employeeId,
@@ -162,7 +173,8 @@ export async function bulkMarkAttendance(req, res) {
         'false',
         now,
         '',
-        ''
+        '',
+        extraSitesValue
       ];
 
       await appendToSheet(SHEETS.ATTENDANCE, [attendanceRow]);
@@ -176,7 +188,8 @@ export async function bulkMarkAttendance(req, res) {
         notes: record.notes || '',
         markedBy: req.user.id,
         approved: false,
-        markedAt: now
+        markedAt: now,
+        extraSites: extraSitesValue ? extraSitesValue.split(',').filter(Boolean) : []
       });
     }
 
@@ -219,7 +232,20 @@ export async function updateAttendance(req, res) {
       return res.status(403).json({ error: 'Cannot edit approved attendance' });
     }
 
+    // Supervisors can only edit records on the same day they were marked
+    const attendanceDate = currentRow[2]; // stored as YYYY-MM-DD
+    const today = new Date().toISOString().slice(0, 10);
+    if (req.user.role === 'supervisor' && attendanceDate !== today) {
+      return res.status(403).json({ error: 'Supervisors can only edit attendance on the same day' });
+    }
+
     const now = new Date().toISOString();
+
+    const extraSitesValue = updates.extraSites !== undefined
+      ? (Array.isArray(updates.extraSites)
+          ? updates.extraSites.join(',')
+          : (updates.extraSites || ''))
+      : (currentRow[13] || '');
 
     const updatedRow = [
       id,
@@ -234,10 +260,11 @@ export async function updateAttendance(req, res) {
       currentRow[9], // approved
       currentRow[10], // markedAt
       now, // lastEditedAt
-      currentRow[12] // approvedAt
+      currentRow[12], // approvedAt
+      extraSitesValue
     ];
 
-    await updateSheet(SHEETS.ATTENDANCE, `A${rowIndex + 1}:M${rowIndex + 1}`, [updatedRow]);
+    await updateSheet(SHEETS.ATTENDANCE, `A${rowIndex + 1}:N${rowIndex + 1}`, [updatedRow]);
 
     await logAudit(
       req.user.id,
@@ -261,7 +288,8 @@ export async function updateAttendance(req, res) {
       approved: updatedRow[9] === 'TRUE' || updatedRow[9] === 'true' || updatedRow[9] === true,
       markedAt: updatedRow[10],
       lastEditedAt: updatedRow[11],
-      approvedAt: updatedRow[12] || null
+      approvedAt: updatedRow[12] || null,
+      extraSites: updatedRow[13] ? updatedRow[13].split(',').filter(Boolean) : []
     });
   } catch (error) {
     console.error('Update attendance error:', error);
@@ -287,11 +315,14 @@ export async function approveAttendance(req, res) {
     const now = new Date().toISOString();
 
     const updatedRow = [...currentRow];
+    while (updatedRow.length < 14) {
+      updatedRow.push('');
+    }
     updatedRow[8] = req.user.id; // approvedBy
     updatedRow[9] = 'true'; // approved
     updatedRow[12] = now; // approvedAt
 
-    await updateSheet(SHEETS.ATTENDANCE, `A${rowIndex + 1}:M${rowIndex + 1}`, [updatedRow]);
+    await updateSheet(SHEETS.ATTENDANCE, `A${rowIndex + 1}:N${rowIndex + 1}`, [updatedRow]);
 
     await logAudit(
       req.user.id,

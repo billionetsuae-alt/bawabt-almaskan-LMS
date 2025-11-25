@@ -5,8 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Label } from '@/components/ui/Label';
+import { Select } from '@/components/ui/Select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/Tabs';
-import { FileText, DollarSign, Users, Download, Calendar, Clock } from 'lucide-react';
+import { FileText, DollarSign, Users, Download, Calendar, Clock, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
@@ -21,6 +22,7 @@ export function Reports() {
   const [reportDate, setReportDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [activeTab, setActiveTab] = useState('attendance');
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [selectedSiteId, setSelectedSiteId] = useState('');
 
   const [year, month] = selectedMonth.split('-').map(Number);
 
@@ -61,6 +63,22 @@ export function Reports() {
     },
   });
 
+  const selectedSite = sites.find((s) => s.id === selectedSiteId) || null;
+
+  const siteAttendance = selectedSiteId
+    ? attendance.filter(att => {
+        const isPrimary = att.siteId === selectedSiteId;
+        const hasExtra = (att.extraSites || []).includes(selectedSiteId);
+        return isPrimary || hasExtra;
+      })
+    : [];
+
+  useEffect(() => {
+    if (!selectedSiteId && sites.length > 0) {
+      setSelectedSiteId(sites[0].id);
+    }
+  }, [selectedSiteId, sites]);
+
   // Generate Attendance Report PDF
   const generateAttendancePDF = (returnBlob = false) => {
     const pdf = new jsPDF();
@@ -82,19 +100,30 @@ export function Reports() {
     const tableData = attendance.map(att => {
       const emp = employees.find(e => e.id === att.employeeId);
       const site = sites.find(s => s.id === att.siteId);
-      const siteInfo = site ? `${site.siteNumber} - ${site.siteName} (${site.location})` : '-';
+      const siteInfo = site ? `${site.siteNumber} - ${site.siteName}` : '-';
+
+      const otherSitesInfo = (att.extraSites || [])
+        .map((siteId) => {
+          const extraSite = sites.find(s => s.id === siteId);
+          if (!extraSite) return null;
+          return `${extraSite.siteNumber} - ${extraSite.siteName}`;
+        })
+        .filter(Boolean)
+        .join(', ') || '-';
+
       return [
         emp?.name || '-',
         emp?.profession || '-',
         att.status,
         att.otHours || 0,
         siteInfo,
+        otherSitesInfo,
         att.approved ? 'Yes' : 'No',
       ];
     });
 
     pdf.autoTable({
-      head: [['Employee', 'Profession', 'Status', 'OT Hours', 'Site (Number - Name - Location)', 'Approved']],
+      head: [['Employee', 'Profession', 'Status', 'OT Hours', 'Site (Number - Name)', 'Other Sites', 'Approved']],
       body: tableData,
       startY: 42,
       theme: 'striped',
@@ -112,6 +141,81 @@ export function Reports() {
       return pdf.output('bloburl');
     } else {
       pdf.save(`Attendance_${reportDate}.pdf`);
+    }
+  };
+
+  const generateSiteAttendancePDF = (returnBlob = false) => {
+    if (!selectedSite) return null;
+
+    const pdf = new jsPDF();
+
+    pdf.setFillColor(20, 83, 89);
+    pdf.rect(0, 0, 210, 35, 'F');
+    pdf.setTextColor(255, 255, 255);
+    pdf.setFontSize(20);
+    pdf.setFont(undefined, 'bold');
+    pdf.text('BAWABT ALMASKAN', 105, 15, { align: 'center' });
+    pdf.setFontSize(10);
+    pdf.setFont(undefined, 'normal');
+    pdf.text('REAL ESTATE - Site-wise Attendance Report', 105, 22, { align: 'center' });
+
+    // Use black text for site and date so it's clearly visible
+    pdf.setTextColor(0, 0, 0);
+
+    const siteLocation = selectedSite.location || 'No location';
+    // Site line on teal bar in white
+    pdf.setTextColor(255, 255, 255);
+    pdf.text(
+      `Site: ${selectedSite.siteNumber} - ${selectedSite.siteName} (${siteLocation})`,
+      105,
+      29,
+      { align: 'center' }
+    );
+    // Date line below in black on white background
+    pdf.setTextColor(0, 0, 0);
+    pdf.text(
+      `Date: ${format(new Date(reportDate), 'dd MMM yyyy')}`,
+      105,
+      40,
+      { align: 'center' }
+    );
+
+    pdf.setTextColor(0, 0, 0);
+
+    const tableData = siteAttendance.map(att => {
+      const emp = employees.find(e => e.id === att.employeeId);
+      const isPrimary = att.siteId === selectedSiteId;
+      const type = isPrimary ? 'Primary Site' : 'Other Site';
+
+      return [
+        emp?.name || '-',
+        emp?.profession || '-',
+        att.status,
+        att.otHours || 0,
+        type,
+      ];
+    });
+
+    pdf.autoTable({
+      head: [['Employee', 'Profession', 'Status', 'OT Hours', 'Type']],
+      body: tableData,
+      startY: 56,
+      theme: 'striped',
+      headStyles: { fillColor: [20, 83, 89], fontSize: 10, fontStyle: 'bold' },
+      margin: { left: 14, right: 14 },
+    });
+
+    const footerY = pdf.internal.pageSize.height - 15;
+    pdf.setFontSize(8);
+    pdf.setTextColor(128, 128, 128);
+    pdf.text(`Generated on: ${format(new Date(), 'dd MMM yyyy HH:mm')}`, 105, footerY, { align: 'center' });
+    pdf.text('BAWABT ALMASKAN - Confidential Document', 105, footerY + 5, { align: 'center' });
+
+    if (returnBlob) {
+      return pdf.output('bloburl');
+    } else {
+      const safeSiteNumber = (selectedSite.siteNumber || 'Site').toString().replace(/\s+/g, '_');
+      pdf.save(`Site_Attendance_${safeSiteNumber}_${reportDate}.pdf`);
     }
   };
 
@@ -236,6 +340,12 @@ export function Reports() {
     }
   };
 
+  const attendanceHasData = attendance.length > 0 && employees.length > 0;
+  const siteAttendanceHasData =
+    !!selectedSite && siteAttendance.length > 0 && employees.length > 0;
+  const payrollHasData = !!(payrollData && Array.isArray(payrollData.payroll) && payrollData.payroll.length > 0);
+  const employeesHasData = employees.length > 0;
+
   // Update preview when active tab or data changes
   useEffect(() => {
     // Clean up previous preview URL
@@ -246,11 +356,16 @@ export function Reports() {
     let url = null;
 
     try {
-      if (activeTab === 'attendance' && attendance.length > 0 && employees.length > 0) {
+      if (activeTab === 'attendance' && attendanceHasData) {
         url = generateAttendancePDF(true);
-      } else if (activeTab === 'payroll' && payrollData) {
+      } else if (
+        activeTab === 'site-attendance' &&
+        siteAttendanceHasData
+      ) {
+        url = generateSiteAttendancePDF(true);
+      } else if (activeTab === 'payroll' && payrollHasData) {
         url = generatePayrollPDF(true);
-      } else if (activeTab === 'employees' && employees.length > 0) {
+      } else if (activeTab === 'employees' && employeesHasData) {
         url = generateEmployeeListPDF(true);
       }
     } catch (error) {
@@ -265,7 +380,24 @@ export function Reports() {
         URL.revokeObjectURL(url);
       }
     };
-  }, [activeTab, reportDate, selectedMonth]);
+  }, [activeTab, reportDate, selectedMonth, selectedSiteId, attendance, employees, payrollData, sites]);
+
+  const getPreviewMessage = () => {
+    if (activeTab === 'attendance') {
+      if (attendanceLoading) return 'Loading attendance report...';
+      if (!attendanceHasData) return 'No attendance records for this date';
+    } else if (activeTab === 'site-attendance') {
+      if (attendanceLoading || sites.length === 0) return 'Loading site-wise attendance report...';
+      if (!selectedSiteId) return 'Select a site to view site-wise attendance';
+      if (!siteAttendanceHasData) return 'No attendance for this site on this date';
+    } else if (activeTab === 'payroll') {
+      if (payrollLoading) return 'Loading payroll report...';
+      if (!payrollHasData) return 'No payroll data for this month';
+    } else if (activeTab === 'employees') {
+      if (!employeesHasData) return 'No employees found';
+    }
+    return 'Loading preview...';
+  };
 
   const reports = [
     {
@@ -277,6 +409,17 @@ export function Reports() {
       iconBg: 'bg-info/10',
       iconColor: 'text-info',
       action: () => generateAttendancePDF(false),
+      loading: attendanceLoading,
+    },
+    {
+      id: 'site-attendance',
+      title: 'Site-wise Attendance',
+      description: 'Attendance by site and date',
+      icon: MapPin,
+      gradient: 'from-primary to-primary/10',
+      iconBg: 'bg-primary/10',
+      iconColor: 'text-primary',
+      action: () => generateSiteAttendancePDF(false),
       loading: attendanceLoading,
     },
     {
@@ -418,7 +561,7 @@ export function Reports() {
       {/* Date Selectors */}
       <Card className="shadow-card border-0">
         <CardContent className="p-4 sm:p-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
             <div>
               <Label htmlFor="month">Select Month (For Payroll)</Label>
               <Input
@@ -438,6 +581,20 @@ export function Reports() {
                 onChange={(e) => setReportDate(e.target.value)}
                 max={format(new Date(), 'yyyy-MM-dd')}
               />
+            </div>
+            <div>
+              <Label htmlFor="site">Select Site (For Site-wise Attendance)</Label>
+              <Select
+                id="site"
+                value={selectedSiteId}
+                onChange={(e) => setSelectedSiteId(e.target.value)}
+              >
+                {sites.map(site => (
+                  <option key={site.id} value={site.id}>
+                    {site.siteNumber} - {site.siteName}
+                  </option>
+                ))}
+              </Select>
             </div>
           </div>
         </CardContent>
@@ -534,6 +691,7 @@ export function Reports() {
             <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
               <TabsList className="w-full mb-4 sm:mb-6 flex overflow-x-auto">
                 <TabsTrigger value="attendance" className="flex-1 min-w-[100px] text-xs sm:text-sm">Attendance</TabsTrigger>
+                <TabsTrigger value="site-attendance" className="flex-1 min-w-[120px] text-xs sm:text-sm">Site Attendance</TabsTrigger>
                 <TabsTrigger value="payroll" className="flex-1 min-w-[100px] text-xs sm:text-sm">Payroll</TabsTrigger>
                 <TabsTrigger value="employees" className="flex-1 min-w-[100px] text-xs sm:text-sm">Employee List</TabsTrigger>
               </TabsList>
@@ -548,7 +706,7 @@ export function Reports() {
                   />
                 ) : (
                   <div className="flex items-center justify-center h-full text-muted-foreground">
-                    <p className="text-sm sm:text-base">Loading preview...</p>
+                    <p className="text-sm sm:text-base">{getPreviewMessage()}</p>
                   </div>
                 )}
               </div>

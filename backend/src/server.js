@@ -6,6 +6,7 @@ import userRoutes from './routes/users.js';
 import employeeRoutes from './routes/employees.js';
 import attendanceRoutes from './routes/attendance.js';
 import siteRoutes from './routes/sites.js';
+import siteExpenseRoutes from './routes/siteExpenses.js';
 import payrollRoutes from './routes/payroll.js';
 import auditRoutes from './routes/audit.js';
 import landingRoutes from './routes/landing.js';
@@ -52,6 +53,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/employees', employeeRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/sites', siteRoutes);
+app.use('/api/site-expenses', siteExpenseRoutes);
 app.use('/api/payroll', payrollRoutes);
 app.use('/api/audit', auditRoutes);
 // app.use('/api/backup', backupRoutes); // Disabled - requires Google Workspace

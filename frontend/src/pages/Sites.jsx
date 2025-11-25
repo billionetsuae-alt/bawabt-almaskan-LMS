@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { siteAPI } from '@/lib/api';
+import { siteAPI, siteExpenseAPI } from '@/lib/api';
 import { useUIStore } from '@/store/uiStore';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
@@ -13,6 +13,7 @@ import { Plus, Edit2, Trash2, MapPin } from 'lucide-react';
 
 export function Sites() {
   const [dialog, setDialog] = useState({ open: false, mode: 'create', site: null });
+  const [expenseDialog, setExpenseDialog] = useState({ open: false, site: null });
   const { showToast } = useUIStore();
   const queryClient = useQueryClient();
 
@@ -20,6 +21,14 @@ export function Sites() {
     queryKey: ['sites'],
     queryFn: async () => {
       const res = await siteAPI.getAll();
+      return res.data;
+    },
+  });
+
+  const { data: siteExpenses = [] } = useQuery({
+    queryKey: ['site-expenses'],
+    queryFn: async () => {
+      const res = await siteExpenseAPI.getAll();
       return res.data;
     },
   });
@@ -50,6 +59,15 @@ export function Sites() {
     },
   });
 
+  const createExpenseMutation = useMutation({
+    mutationFn: siteExpenseAPI.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries(['site-expenses']);
+      showToast({ message: 'Expense added successfully', type: 'success' });
+      setExpenseDialog({ open: false, site: null });
+    },
+  });
+
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
@@ -66,6 +84,35 @@ export function Sites() {
       updateMutation.mutate({ id: dialog.site.id, data });
     }
   };
+
+  const handleExpenseSubmit = (e) => {
+    e.preventDefault();
+    if (!expenseDialog.site) return;
+
+    const formData = new FormData(e.target);
+    const amountValue = parseFloat(formData.get('amount')) || 0;
+
+    const data = {
+      siteId: expenseDialog.site.id,
+      siteNumber: expenseDialog.site.siteNumber,
+      amount: amountValue,
+      date: formData.get('date'),
+      category: formData.get('category') || '',
+      notes: formData.get('notes') || '',
+    };
+
+    createExpenseMutation.mutate(data);
+  };
+
+  const expenseTotals = useMemo(() => {
+    const totals = {};
+    for (const expense of siteExpenses) {
+      const key = expense.siteId;
+      const amount = typeof expense.amount === 'number' ? expense.amount : parseFloat(expense.amount) || 0;
+      totals[key] = (totals[key] || 0) + amount;
+    }
+    return totals;
+  }, [siteExpenses]);
 
   return (
     <div className="space-y-6">
@@ -106,6 +153,14 @@ export function Sites() {
                       {site.location && (
                         <p className="text-xs text-muted-foreground mt-1">{site.location}</p>
                       )}
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Total Expense:{' '}
+                        <span className="font-semibold">
+                          {expenseTotals[site.id]
+                            ? expenseTotals[site.id].toLocaleString()
+                            : '0'}
+                        </span>
+                      </p>
                     </div>
                   </div>
                   <Badge variant={site.active ? 'success' : 'secondary'}>
@@ -123,6 +178,14 @@ export function Sites() {
                   >
                     <Edit2 className="h-4 w-4 mr-1" />
                     Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="flex-1"
+                    onClick={() => setExpenseDialog({ open: true, site })}
+                  >
+                    Add Expense
                   </Button>
                   <Button
                     size="sm"
@@ -206,6 +269,75 @@ export function Sites() {
               </Button>
               <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>
                 {dialog.mode === 'create' ? 'Add Site' : 'Update Site'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Site Expense Dialog */}
+      <Dialog open={expenseDialog.open} onClose={() => setExpenseDialog({ open: false, site: null })}>
+        <DialogContent onClose={() => setExpenseDialog({ open: false, site: null })}>
+          <DialogHeader>
+            <DialogTitle>
+              Add Expense for {expenseDialog.site?.siteNumber} - {expenseDialog.site?.siteName}
+            </DialogTitle>
+          </DialogHeader>
+          <form onSubmit={handleExpenseSubmit}>
+            <div className="space-y-4 p-6">
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount *</Label>
+                <Input
+                  id="amount"
+                  name="amount"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="date">Date *</Label>
+                <Input
+                  id="date"
+                  name="date"
+                  type="date"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="category">Expense Type / Category</Label>
+                <Input
+                  id="category"
+                  name="category"
+                  placeholder="e.g., Materials, Transport"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="notes">Notes</Label>
+                <Input
+                  id="notes"
+                  name="notes"
+                  placeholder="Optional notes"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setExpenseDialog({ open: false, site: null })}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={createExpenseMutation.isPending}
+              >
+                Add Expense
               </Button>
             </DialogFooter>
           </form>

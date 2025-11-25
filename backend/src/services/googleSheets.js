@@ -28,6 +28,7 @@ export const SHEETS = {
   EMPLOYEES: 'Employees',
   ATTENDANCE: 'Attendance',
   SITES: 'Sites',
+  SITE_EXPENSES: 'SiteExpenses',
   AUDIT_LOGS: 'AuditLogs'
 };
 
@@ -142,10 +143,13 @@ export async function initializeSheetHeaders() {
       ['id', 'name', 'profession', 'perDaySalary', 'perHourSalary', 'siteId', 'active', 'joiningDate', 'notes', 'createdAt', 'updatedAt']
     ],
     [SHEETS.ATTENDANCE]: [
-      ['id', 'employeeId', 'date', 'status', 'otHours', 'siteId', 'notes', 'markedBy', 'approvedBy', 'approved', 'markedAt', 'lastEditedAt', 'approvedAt']
+      ['id', 'employeeId', 'date', 'status', 'otHours', 'siteId', 'notes', 'markedBy', 'approvedBy', 'approved', 'markedAt', 'lastEditedAt', 'approvedAt', 'extraSites']
     ],
     [SHEETS.SITES]: [
       ['id', 'siteNumber', 'siteName', 'location', 'active', 'createdAt', 'updatedAt']
+    ],
+    [SHEETS.SITE_EXPENSES]: [
+      ['id', 'siteId', 'siteNumber', 'amount', 'date', 'category', 'notes', 'createdBy', 'createdAt']
     ],
     [SHEETS.AUDIT_LOGS]: [
       ['id', 'timestamp', 'userId', 'userName', 'action', 'entity', 'entityId', 'details']
