@@ -164,7 +164,7 @@ export function Users() {
                 {managers.map(user => (
                   <div 
                     key={user.id} 
-                    className="flex items-center justify-between p-4 bg-success-light rounded-lg"
+                    className="flex items-center p-4 bg-success-light rounded-lg"
                   >
                     <div className="flex items-center gap-3">
                       <div className="bg-primary/20 p-2 rounded-lg">
@@ -175,7 +175,6 @@ export function Users() {
                         <p className="text-sm text-muted-foreground">{user.email}</p>
                       </div>
                     </div>
-                    <Badge variant="success">Manager</Badge>
                   </div>
                 ))}
               </div>
@@ -203,7 +202,7 @@ export function Users() {
                   {supervisors.map(user => (
                     <div 
                       key={user.id} 
-                      className="flex items-center justify-between p-4 bg-accent-light rounded-lg"
+                      className="flex items-center justify-between p-3 sm:p-4 pr-4 sm:pr-6 bg-accent-light rounded-lg gap-2"
                     >
                       <div className="flex items-center gap-3">
                         <div className="bg-accent/20 p-2 rounded-lg">
@@ -214,10 +213,11 @@ export function Users() {
                           <p className="text-sm text-muted-foreground">{user.email}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col items-end gap-1 sm:gap-1">
                         <Button
                           size="sm"
                           variant="outline"
+                          className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full flex items-center justify-center"
                           onClick={() => setDialog({ open: true, user, mode: 'edit' })}
                         >
                           <Edit2 className="h-3 w-3" />
@@ -225,6 +225,7 @@ export function Users() {
                         <Button
                           size="sm"
                           variant="destructive"
+                          className="h-8 w-8 sm:h-9 sm:w-9 p-0 rounded-full flex items-center justify-center"
                           onClick={() => handleDelete(user)}
                         >
                           <Trash2 className="h-3 w-3" />

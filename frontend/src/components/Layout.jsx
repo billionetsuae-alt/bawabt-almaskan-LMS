@@ -53,7 +53,7 @@ export function Layout({ children }) {
         </button>
         <div className="flex items-center gap-2">
           <img 
-            src="/src/components/logo/bawabt-logo.png" 
+            src="/bawabt-logo.png" 
             alt="BAWABT ALMASKAN" 
             className="h-8 w-auto"
           />
@@ -78,7 +78,7 @@ export function Layout({ children }) {
           <div className="p-6 border-b bg-[#145359]">
             <div className="flex items-center gap-3 mb-3">
               <img 
-                src="/src/components/logo/bawabt-logo.png" 
+                src="/bawabt-logo.png" 
                 alt="BAWABT ALMASKAN Logo" 
                 className="h-12 w-auto"
               />
