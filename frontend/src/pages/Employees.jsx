@@ -384,7 +384,7 @@ export function Employees() {
 
       {/* Employee Dialog */}
       <Dialog open={dialog.open} onClose={() => setDialog({ open: false, mode: 'create', employee: null })}>
-        <DialogContent onClose={() => setDialog({ open: false, mode: 'create', employee: null })}>
+        <DialogContent>
           <DialogHeader>
             <div className="flex items-center justify-between gap-2">
               <DialogTitle>
