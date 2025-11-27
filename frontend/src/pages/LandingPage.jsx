@@ -94,7 +94,7 @@ export function LandingPage() {
             {/* Logo */}
             <div className="flex items-center gap-3">
               <img 
-                src="https://www.billionets.com/assets/images/logo-new.png" 
+                src="https://www.billionets.com/logo%20-%20billionets.png" 
                 alt="Billionets" 
                 className="h-8 sm:h-10 w-auto"
               />
