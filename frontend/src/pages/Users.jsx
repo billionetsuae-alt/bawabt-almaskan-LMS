@@ -142,7 +142,7 @@ export function Users() {
         </div>
         <Button onClick={() => setDialog({ open: true, user: null, mode: 'add' })}>
           <Plus className="h-4 w-4 mr-2" />
-          Add Supervisor
+          Add Supervisor / Manager
         </Button>
       </div>
 
@@ -245,7 +245,7 @@ export function Users() {
         <DialogContent>
           <DialogHeader>
             <DialogTitle>
-              {dialog.mode === 'edit' ? 'Edit User' : 'Add Supervisor'}
+              {dialog.mode === 'edit' ? 'Edit User' : 'Add Supervisor / Manager'}
             </DialogTitle>
           </DialogHeader>
           <form onSubmit={handleSubmit} className="space-y-4">

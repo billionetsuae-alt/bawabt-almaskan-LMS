@@ -41,8 +41,30 @@ export const authAPI = {
 export const employeeAPI = {
   getAll: () => api.get('/api/employees'),
   getOne: (id) => api.get(`/api/employees/${id}`),
-  create: (data) => api.post('/api/employees', data),
-  update: (id, data) => api.put(`/api/employees/${id}`, data),
+  create: (data) => {
+    if (data instanceof FormData) {
+      return api.post('/api/employees', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
+    return api.post('/api/employees', data);
+  },
+  update: (id, data) => {
+    if (data instanceof FormData) {
+      return api.put(`/api/employees/${id}`, data, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+    }
+    return api.put(`/api/employees/${id}`, data);
+  },
+  downloadIdProof: (id) =>
+    api.get(`/api/employees/${id}/id-proof/file`, {
+      responseType: 'blob',
+    }),
   delete: (id) => api.delete(`/api/employees/${id}`),
 };
 

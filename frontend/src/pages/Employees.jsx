@@ -9,13 +9,14 @@ import { Label } from '@/components/ui/Label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/Dialog';
-import { Plus, Edit2, Trash2, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Search, FileText, Download, X } from 'lucide-react';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 export function Employees() {
   const [searchTerm, setSearchTerm] = useState('');
   const [dialog, setDialog] = useState({ open: false, mode: 'create', employee: null });
   const [detailEmployee, setDetailEmployee] = useState(null);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
   const { showToast } = useUIStore();
   const queryClient = useQueryClient();
 
@@ -61,6 +62,47 @@ export function Employees() {
     },
   });
 
+  const handleOpenIdProof = async (employee) => {
+    try {
+      const res = await employeeAPI.downloadIdProof(employee.id);
+      const blobUrl = URL.createObjectURL(res.data);
+      window.open(blobUrl);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    } catch (error) {
+      console.error('Open ID proof error:', error);
+      showToast({ message: 'Failed to open identity proof', type: 'error' });
+    }
+  };
+
+  const handleDownloadIdProof = async (employee) => {
+    try {
+      const res = await employeeAPI.downloadIdProof(employee.id);
+      const blob = res.data;
+      const contentType = res.headers['content-type'] || 'application/octet-stream';
+
+      let ext = 'bin';
+      if (contentType.includes('pdf')) ext = 'pdf';
+      else if (contentType.includes('jpeg')) ext = 'jpg';
+      else if (contentType.includes('png')) ext = 'png';
+      else if (contentType.includes('webp')) ext = 'webp';
+
+      const safeName = (employee.name || 'employee').toString().replace(/[^a-z0-9-_]+/gi, '_');
+      const filename = `${safeName}_id_proof.${ext}`;
+
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download ID proof error:', error);
+      showToast({ message: 'Failed to download identity proof', type: 'error' });
+    }
+  };
+
   const filteredEmployees = employees.filter(emp =>
     emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.profession.toLowerCase().includes(searchTerm.toLowerCase())
@@ -69,21 +111,23 @@ export function Employees() {
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-    const data = {
-      name: formData.get('name'),
-      profession: formData.get('profession'),
-      perDaySalary: parseFloat(formData.get('perDaySalary')),
-      perHourSalary: parseFloat(formData.get('perHourSalary')),
-      siteId: formData.get('siteId') || null,
-      active: formData.get('active') === 'true',
-      joiningDate: formData.get('joiningDate') || null,
-      notes: formData.get('notes') || '',
-    };
+
+    const siteId = formData.get('siteId');
+    formData.set('siteId', siteId || '');
+
+    const joiningDate = formData.get('joiningDate');
+    formData.set('joiningDate', joiningDate || '');
+
+    const notes = formData.get('notes');
+    formData.set('notes', notes || '');
+
+    const active = formData.get('active') || 'true';
+    formData.set('active', active);
 
     if (dialog.mode === 'create') {
-      createMutation.mutate(data);
+      createMutation.mutate(formData);
     } else {
-      updateMutation.mutate({ id: dialog.employee.id, data });
+      updateMutation.mutate({ id: dialog.employee.id, data: formData });
     }
   };
 
@@ -194,14 +238,48 @@ export function Employees() {
       <Dialog open={!!detailEmployee} onClose={() => setDetailEmployee(null)}>
         <DialogContent className="backdrop-blur-sm bg-white/80 dark:bg-slate-900/80">
           <DialogHeader>
-            <DialogTitle>Employee Details</DialogTitle>
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle>Employee Details</DialogTitle>
+              <button
+                type="button"
+                onClick={() => setDetailEmployee(null)}
+                className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </DialogHeader>
           {detailEmployee && (
-            <div className="space-y-4">
-              <div>
-                <p className="text-lg font-semibold break-words">{detailEmployee.name}</p>
-                <p className="text-sm text-muted-foreground break-words">{detailEmployee.profession}</p>
+            <div className="space-y-6">
+              <div className="flex flex-row gap-4 items-start">
+                {detailEmployee.photoUrl && (
+                  <div className="flex-shrink-0">
+                    <img
+                      src={detailEmployee.photoUrl}
+                      alt={detailEmployee.name}
+                      className="h-24 w-24 rounded-xl object-cover shadow-md border cursor-pointer"
+                      onClick={() => setPhotoPreviewUrl(detailEmployee.photoUrl)}
+                    />
+                  </div>
+                )}
+                <div className="flex-1 space-y-1">
+                  <p className="text-lg font-semibold break-words">{detailEmployee.name}</p>
+                  <p className="text-sm text-muted-foreground break-words">{detailEmployee.profession}</p>
+                  <div className="flex flex-wrap items-center gap-2 text-sm mt-2">
+                    <span className="text-muted-foreground">Status:</span>
+                    <Badge variant={detailEmployee.active ? 'success' : 'secondary'}>
+                      {detailEmployee.active ? 'Active' : 'Inactive'}
+                    </Badge>
+                  </div>
+                  <div className="text-sm mt-2">
+                    <span className="text-muted-foreground">Emirates ID:</span>
+                    <span className="ml-2 font-medium break-words">
+                      {detailEmployee.emiratesId || '-'}
+                    </span>
+                  </div>
+                </div>
               </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                 <div>
                   <span className="text-muted-foreground">Daily Rate:</span>
@@ -210,10 +288,6 @@ export function Employees() {
                 <div>
                   <span className="text-muted-foreground">Hourly Rate:</span>
                   <span className="ml-2 font-medium">{formatCurrency(detailEmployee.perHourSalary)}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">Status:</span>
-                  <span className="ml-2 font-medium">{detailEmployee.active ? 'Active' : 'Inactive'}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Site:</span>
@@ -228,6 +302,75 @@ export function Employees() {
                   <span className="ml-2 font-medium">{detailEmployee.joiningDate || '-'}</span>
                 </div>
               </div>
+
+              {detailEmployee.idProofUrl && (
+                <div className="space-y-2 text-sm">
+                  <p className="text-sm font-medium">Identity Proof</p>
+                  {(() => {
+                    const originalUrl = detailEmployee.idProofUrl;
+                    const lowerUrl = originalUrl.toLowerCase();
+                    const looksLikePdf = lowerUrl.includes('.pdf') || lowerUrl.includes('/raw/upload/');
+
+                    if (looksLikePdf) {
+                      let previewUrl = originalUrl;
+
+                      try {
+                        const parsed = new URL(originalUrl);
+                        const parts = parsed.pathname.split('/');
+                        const cloudName = parts[1];
+
+                        if (parsed.hostname.includes('res.cloudinary.com') && cloudName) {
+                          const encodedSource = encodeURIComponent(originalUrl);
+                          previewUrl = `https://res.cloudinary.com/${cloudName}/image/fetch/f_auto,q_auto,w_1200/${encodedSource}`;
+                        }
+                      } catch {
+                        // keep original previewUrl
+                      }
+
+                      return (
+                        <div className="space-y-3">
+                          <div className="border rounded-lg overflow-hidden w-full">
+                            <img
+                              src={previewUrl}
+                              alt="Identity proof PDF preview"
+                              className="w-full max-h-80 object-contain bg-muted"
+                            />
+                          </div>
+                          <div className="flex flex-wrap items-center gap-4 text-sm">
+                            <button
+                              type="button"
+                              onClick={() => handleOpenIdProof(detailEmployee)}
+                              className="inline-flex items-center gap-2 text-blue-600 hover:underline"
+                            >
+                              <FileText className="h-4 w-4" />
+                              Open PDF
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadIdProof(detailEmployee)}
+                              className="inline-flex items-center gap-2 text-blue-600 hover:underline"
+                            >
+                              <Download className="h-4 w-4" />
+                              Download
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="border rounded-lg overflow-hidden w-full">
+                        <img
+                          src={originalUrl}
+                          alt="Identity proof"
+                          className="w-full max-h-80 object-contain bg-muted"
+                        />
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
               {detailEmployee.notes && (
                 <div className="text-sm">
                   <span className="text-muted-foreground">Notes:</span>
@@ -243,11 +386,20 @@ export function Employees() {
       <Dialog open={dialog.open} onClose={() => setDialog({ open: false, mode: 'create', employee: null })}>
         <DialogContent onClose={() => setDialog({ open: false, mode: 'create', employee: null })}>
           <DialogHeader>
-            <DialogTitle>
-              {dialog.mode === 'create' ? 'Add New Employee' : 'Edit Employee'}
-            </DialogTitle>
+            <div className="flex items-center justify-between gap-2">
+              <DialogTitle>
+                {dialog.mode === 'create' ? 'Add New Employee' : 'Edit Employee'}
+              </DialogTitle>
+              <button
+                type="button"
+                onClick={() => setDialog({ open: false, mode: 'create', employee: null })}
+                className="rounded-md p-1 text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </DialogHeader>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} encType="multipart/form-data">
             <div className="space-y-4 p-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -268,6 +420,46 @@ export function Employees() {
                     required
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="emiratesId">Emirates ID</Label>
+                  <Input
+                    id="emiratesId"
+                    name="emiratesId"
+                    defaultValue={dialog.employee?.emiratesId || ''}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="photo">Photo</Label>
+                  <Input
+                    id="photo"
+                    name="photo"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                  />
+                  {dialog.mode === 'edit' && dialog.employee?.photoUrl && (
+                    <p className="text-xs text-muted-foreground">
+                      Current photo will be kept if you do not upload a new one.
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="idProof">Identity Proof</Label>
+                <Input
+                  id="idProof"
+                  name="idProof"
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp,application/pdf"
+                />
+                {dialog.mode === 'edit' && dialog.employee?.idProofUrl && (
+                  <p className="text-xs text-muted-foreground">
+                    Existing identity proof will be kept if you do not upload a new file.
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -358,6 +550,20 @@ export function Employees() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {photoPreviewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+          onClick={() => setPhotoPreviewUrl(null)}
+        >
+          <img
+            src={photoPreviewUrl}
+            alt="Employee photo"
+            className="max-h-[90vh] max-w-[90vw] rounded-xl shadow-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

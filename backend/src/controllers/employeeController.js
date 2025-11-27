@@ -1,6 +1,8 @@
 import { getSheetData, appendToSheet, updateSheet, generateId, SHEETS, findRowIndexById } from '../services/googleSheets.js';
 import { logAudit } from '../services/audit.js';
+import { uploadEmployeePhoto, uploadEmployeeIdProof } from '../services/cloudinary.js';
 import { createTestFileForEmployee } from '../services/employeeFiles.js';
+import fetch from 'node-fetch';
 
 /**
  * Get all employees
@@ -27,7 +29,10 @@ export async function getAllEmployees(req, res) {
         joiningDate: row[7] || null,
         notes: row[8] || '',
         createdAt: row[9],
-        updatedAt: row[10]
+        updatedAt: row[10],
+        emiratesId: row[11] || null,
+        photoUrl: row[12] || null,
+        idProofUrl: row[13] || null
       }));
 
     res.json(employees);
@@ -62,7 +67,10 @@ export async function getEmployee(req, res) {
       joiningDate: employeeRow[7] || null,
       notes: employeeRow[8] || '',
       createdAt: employeeRow[9],
-      updatedAt: employeeRow[10]
+      updatedAt: employeeRow[10],
+      emiratesId: employeeRow[11] || null,
+      photoUrl: employeeRow[12] || null,
+      idProofUrl: employeeRow[13] || null
     };
 
     res.json(employee);
@@ -85,11 +93,18 @@ export async function createEmployee(req, res) {
       siteId = null,
       active = true,
       joiningDate = null,
-      notes = ''
+      notes = '',
+      emiratesId = ''
     } = req.body;
 
     const employeeId = generateId('emp_');
     const now = new Date().toISOString();
+
+    const photoFile = req.files?.photo?.[0];
+    const idProofFile = req.files?.idProof?.[0];
+
+    const photoUrl = photoFile ? await uploadEmployeePhoto(photoFile) : '';
+    const idProofUrl = idProofFile ? await uploadEmployeeIdProof(idProofFile) : '';
 
     const employeeRow = [
       employeeId,
@@ -102,7 +117,10 @@ export async function createEmployee(req, res) {
       joiningDate || '',
       notes,
       now,
-      now
+      now,
+      emiratesId || '',
+      photoUrl || '',
+      idProofUrl || ''
     ];
 
     await appendToSheet(SHEETS.EMPLOYEES, [employeeRow]);
@@ -127,7 +145,10 @@ export async function createEmployee(req, res) {
       joiningDate,
       notes,
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      emiratesId: emiratesId || null,
+      photoUrl: photoUrl || null,
+      idProofUrl: idProofUrl || null
     });
   } catch (error) {
     console.error('Create employee error:', error);
@@ -153,6 +174,20 @@ export async function updateEmployee(req, res) {
     const currentRow = data[rowIndex];
     const now = new Date().toISOString();
 
+    const photoFile = req.files?.photo?.[0];
+    const idProofFile = req.files?.idProof?.[0];
+
+    let photoUrl = currentRow[12] || '';
+    let idProofUrl = currentRow[13] || '';
+
+    if (photoFile) {
+      photoUrl = await uploadEmployeePhoto(photoFile);
+    }
+
+    if (idProofFile) {
+      idProofUrl = await uploadEmployeeIdProof(idProofFile);
+    }
+
     // Update fields
     const updatedRow = [
       id,
@@ -165,10 +200,13 @@ export async function updateEmployee(req, res) {
       updates.joiningDate !== undefined ? (updates.joiningDate || '') : currentRow[7],
       updates.notes !== undefined ? updates.notes : currentRow[8],
       currentRow[9], // createdAt
-      now // updatedAt
+      now, // updatedAt
+      updates.emiratesId !== undefined ? updates.emiratesId : (currentRow[11] || ''),
+      photoUrl,
+      idProofUrl
     ];
 
-    await updateSheet(SHEETS.EMPLOYEES, `A${rowIndex + 1}:K${rowIndex + 1}`, [updatedRow]);
+    await updateSheet(SHEETS.EMPLOYEES, `A${rowIndex + 1}:N${rowIndex + 1}`, [updatedRow]);
 
     await logAudit(
       req.user.id,
@@ -190,7 +228,10 @@ export async function updateEmployee(req, res) {
       joiningDate: updatedRow[7] || null,
       notes: updatedRow[8],
       createdAt: updatedRow[9],
-      updatedAt: updatedRow[10]
+      updatedAt: updatedRow[10],
+      emiratesId: updatedRow[11] || null,
+      photoUrl: updatedRow[12] || null,
+      idProofUrl: updatedRow[13] || null
     });
   } catch (error) {
     console.error('Update employee error:', error);
@@ -251,5 +292,75 @@ export async function deleteEmployee(req, res) {
   } catch (error) {
     console.error('Delete employee error:', error);
     res.status(500).json({ error: 'Failed to delete employee' });
+  }
+}
+
+/**
+ * Download employee identity proof file
+ */
+export async function downloadEmployeeIdProof(req, res) {
+  try {
+    const { id } = req.params;
+
+    const data = await getSheetData(SHEETS.EMPLOYEES);
+    const employeeRow = data.slice(1).find(row => row[0] === id && row[0] !== 'DELETED');
+
+    if (!employeeRow) {
+      return res.status(404).json({ error: 'Employee not found' });
+    }
+
+    const idProofUrl = employeeRow[13];
+
+    if (!idProofUrl) {
+      return res.status(404).json({ error: 'No identity proof found for this employee' });
+    }
+
+    const upstream = await fetch(idProofUrl);
+
+    if (!upstream.ok || !upstream.body) {
+      console.error('Cloudinary fetch error:', upstream.status, upstream.statusText);
+      return res.status(502).json({ error: 'Failed to download identity proof' });
+    }
+
+    const rawContentType = upstream.headers.get('content-type') || 'application/octet-stream';
+    const contentLength = upstream.headers.get('content-length');
+
+    const urlLower = idProofUrl.toLowerCase();
+    let contentType = rawContentType;
+    let ext = 'bin';
+
+    // We only ever store ID proof as either image/* or PDF (raw upload).
+    // Cloudinary raw uploads typically come back as application/octet-stream,
+    // so we treat any raw upload URL as a PDF by default.
+    if (urlLower.includes('/raw/upload/')) {
+      contentType = 'application/pdf';
+      ext = 'pdf';
+    } else if (rawContentType.includes('pdf')) {
+      contentType = 'application/pdf';
+      ext = 'pdf';
+    } else if (rawContentType.includes('jpeg')) {
+      contentType = 'image/jpeg';
+      ext = 'jpg';
+    } else if (rawContentType.includes('png')) {
+      contentType = 'image/png';
+      ext = 'png';
+    } else if (rawContentType.includes('webp')) {
+      contentType = 'image/webp';
+      ext = 'webp';
+    }
+
+    if (contentLength) {
+      res.setHeader('Content-Length', contentLength);
+    }
+    res.setHeader('Content-Type', contentType);
+
+    const safeName = (employeeRow[1] || 'employee').toString().replace(/[^a-z0-9-_]+/gi, '_');
+    const filename = `${safeName}_id_proof.${ext}`;
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+    upstream.body.pipe(res);
+  } catch (error) {
+    console.error('Download employee ID proof error:', error);
+    res.status(500).json({ error: 'Failed to download identity proof' });
   }
 }

@@ -140,7 +140,7 @@ export async function initializeSheetHeaders() {
       ['id', 'email', 'password', 'name', 'role', 'active', 'createdAt', 'lastLogin']
     ],
     [SHEETS.EMPLOYEES]: [
-      ['id', 'name', 'profession', 'perDaySalary', 'perHourSalary', 'siteId', 'active', 'joiningDate', 'notes', 'createdAt', 'updatedAt']
+      ['id', 'name', 'profession', 'perDaySalary', 'perHourSalary', 'siteId', 'active', 'joiningDate', 'notes', 'createdAt', 'updatedAt', 'emirates_id', 'photo_url', 'id_proof_url']
     ],
     [SHEETS.ATTENDANCE]: [
       ['id', 'employeeId', 'date', 'status', 'otHours', 'siteId', 'notes', 'markedBy', 'approvedBy', 'approved', 'markedAt', 'lastEditedAt', 'approvedAt', 'extraSites']

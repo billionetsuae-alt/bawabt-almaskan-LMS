@@ -154,11 +154,11 @@ npm run create-admin
 
 ⚠️ **IMPORTANT:** Change the default password immediately after first login!
 
-### Add Supervisors
+### Add Supervisor / Manager
 
 1. Login as admin/manager
 2. Go to "Supervisors" page
-3. Click "Add Supervisor"
+3. Click "Add Supervisor / Manager"
 4. Fill in details and assign role
 
 ## 🚀 Deployment
